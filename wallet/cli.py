@@ -43,87 +43,87 @@ def cli(ctx, date=None, edit=None, help=False):
             sys.exit()
 
         ctx.invoke(options[edit])
-        sys.exit()
 
-    date = date or 'today'
-    date = parse_date(date)
+    else:
+        date = date or 'today'
+        date = parse_date(date)
 
-    if date < account.today:
-        click.echo(crayons.red("Select a date of today or later."))
-        sys.exit()
+        if date < account.today:
+            click.echo(crayons.red("Select a date of today or later."))
+            sys.exit()
 
-    payperiod = account.wallet.get_payperiod(date)
+        payperiod = account.wallet.get_payperiod(date)
 
-    incomes, income_total = payperiod.get_incomes()
-    expenses, expense_total = payperiod.get_expenses()
-    upcoming_expenses, upcoming_expenses_total = account.wallet.get_upcoming_expenses(date)
+        incomes, income_total = payperiod.get_incomes()
+        expenses, expense_total = payperiod.get_expenses()
+        upcoming_expenses, upcoming_expenses_total = account.wallet.get_upcoming_expenses(date)
 
-    click.echo('\n', nl=False)
+        click.echo('\n', nl=False)
 
-    click.echo(
-        crayons.cyan("Wallet for {0} on {1}".format(
-            str(account.wallet), date.strftime("%B %d, %Y"))
+        click.echo(
+            crayons.cyan("Wallet for {0} on {1}".format(
+                str(account.wallet), date.strftime("%B %d, %Y"))
+            )
         )
-    )
-    click.echo(
-        crayons.yellow("Savings balance: \t${0}".format(
-            account.wallet.calculate_savings_balance(date)))
-    )
-    click.echo(
-        crayons.yellow("PayPeriod Savings: \t${0}".format(
-            account.payperiod.get_savings()))
-    )
-    click.echo('\n', nl=False)
+        click.echo(
+            crayons.yellow("Savings balance: \t${0}".format(
+                account.wallet.calculate_savings_balance(date)))
+        )
+        click.echo(
+            crayons.yellow("PayPeriod Savings: \t${0}".format(
+                account.payperiod.get_savings()))
+        )
+        click.echo('\n', nl=False)
 
-    click.echo(crayons.cyan("Income: ${0}".format(income_total)))
-    for trans in incomes:
-        if len(trans.transaction.name) <= 5:
-            click.echo(
-                "\t" + crayons.yellow(
-                    trans.transaction.name + ":\t\t$" + str(trans.amount)
+        click.echo(crayons.cyan("Income: ${0}".format(income_total)))
+        for trans in incomes:
+            if len(trans.transaction.name) <= 5:
+                click.echo(
+                    "\t" + crayons.yellow(
+                        trans.transaction.name + ":\t\t$" + str(trans.amount)
+                    )
                 )
-            )
-        else:
-            click.echo(
-                "\t" + crayons.yellow(
-                    trans.transaction.name + ":\t$" + str(trans.amount)
+            else:
+                click.echo(
+                    "\t" + crayons.yellow(
+                        trans.transaction.name + ":\t$" + str(trans.amount)
+                    )
                 )
-            )
-    click.echo('\n', nl=False)
+        click.echo('\n', nl=False)
 
-    click.echo(crayons.cyan("Expenses: ${0}".format(expense_total)))
-    for trans in expenses:
-        if len(trans.transaction.name) <= 5:
-            click.echo(
-                "\t" + crayons.yellow(
-                    trans.transaction.name + ":\t\t$" + str(trans.amount)
+        click.echo(crayons.cyan("Expenses: ${0}".format(expense_total)))
+        for trans in expenses:
+            if len(trans.transaction.name) <= 5:
+                click.echo(
+                    "\t" + crayons.yellow(
+                        trans.transaction.name + ":\t\t$" + str(trans.amount)
+                    )
                 )
-            )
-        else:
-            click.echo(
-                "\t" + crayons.yellow(
-                    trans.transaction.name + ":\t$" + str(trans.amount)
+            else:
+                click.echo(
+                    "\t" + crayons.yellow(
+                        trans.transaction.name + ":\t$" + str(trans.amount)
+                    )
                 )
-            )
-    click.echo('\n', nl=False)
+        click.echo('\n', nl=False)
 
-    click.echo(crayons.cyan("Upcoming Expenses: ${0}".format(upcoming_expenses_total)))
-    for trans in upcoming_expenses:
-        click.echo(crayons.blue('\t{0}'.format(trans[0].strftime("%B %d, %Y"))))
+        click.echo(crayons.cyan("Upcoming Expenses: ${0}".format(upcoming_expenses_total)))
+        for trans in upcoming_expenses:
+            click.echo(crayons.blue('\t{0}'.format(trans[0].strftime("%B %d, %Y"))))
 
-        if len(trans[1]) <= 5:
-            click.echo(
-                "\t" + crayons.yellow(
-                    trans[1] + ":\t\t$" + str(trans[2])
+            if len(trans[1]) <= 5:
+                click.echo(
+                    "\t" + crayons.yellow(
+                        trans[1] + ":\t\t$" + str(trans[2])
+                    )
                 )
-            )
-        else:
-            click.echo(
-                "\t" + crayons.yellow(
-                    trans[1] + ":\t$" + str(trans[2])
+            else:
+                click.echo(
+                    "\t" + crayons.yellow(
+                        trans[1] + ":\t$" + str(trans[2])
+                    )
                 )
-            )
-    click.echo('\n', nl=False)
+        click.echo('\n', nl=False)
 
 
 @click.command(help="View and modify savings balance.")
