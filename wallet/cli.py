@@ -43,32 +43,30 @@ class Account(object):
     help="Show this message then exit."
 )
 @click.option('--setsavings')
-@click.option('--edit', nargs=1)
+@click.option('--add', nargs=1)
 @click.pass_context
-def cli(ctx, date=None, edit=None, setsavings=None, help=False):
+def cli(ctx, date=None, add=None, setsavings=None, help=False):
 
     account = ctx.obj = Account(date=date)
 
     options = {
         'income': income,
-        'expenses': expense,
+        'expense': expense,
     }
 
     if setsavings:
-        savings = setsavings
-        account.wallet.savings = savings
-        account.wallet.save()
+        account.wallet.update_savings(setsavings)
 
         click.echo(
             crayons.yellow("New savings balance: {0}".format(account.wallet.savings))
         )
 
-    elif edit:
-        if edit not in options:
+    elif add:
+        if add not in options:
             click.echo(crayons.red('Enter a valid command'))
             sys.exit()
 
-        ctx.invoke(options[edit])
+        ctx.invoke(options[add])
 
     else:
         click.echo('\n', nl=False)
@@ -133,18 +131,6 @@ def cli(ctx, date=None, edit=None, setsavings=None, help=False):
                     crayons.yellow("\t{0}:\t${1}".format(trans[1], trans[2]))
                 )
         click.echo('\n', nl=False)
-
-
-@click.command(help="View and modify savings balance.")
-@click.pass_obj
-def savings(account):
-    savings = click.prompt(crayons.magenta('New savings balance'))
-    account.wallet.savings = savings
-    account.wallet.save()
-
-    click.echo(
-        crayons.yellow("New savings balance: {0}".format(account.wallet.savings))
-    )
 
 
 @click.command(help="List and modify incomes.")
@@ -228,7 +214,6 @@ def expense(account):
     )
 
 
-cli.add_command(savings)
 cli.add_command(income)
 cli.add_command(expense)
 

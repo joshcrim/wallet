@@ -19,10 +19,7 @@ class Transaction(models.Model):
     name = models.CharField(max_length=40)
     trans_type = models.IntegerField(choices=trans_types)
     frequency = models.IntegerField(choices=frequencies)
-    amount = models.DecimalField(
-        decimal_places=2,
-        max_digits=7
-    )
+    amount = models.DecimalField(decimal_places=2, max_digits=7)
     completed = models.BooleanField(default=False, blank=True)
 
     class Meta:
@@ -76,14 +73,12 @@ class PayPeriod(models.Model):
 
     def get_incomes(self):
         incomes = self._generate_occurrences().filter(transaction__trans_type=0)
-
         income_total = incomes.aggregate(total=Sum('amount'))['total']
 
         return incomes, income_total
 
     def get_expenses(self):
         expenses = self._generate_occurrences().filter(transaction__trans_type=1)
-
         expense_total = expenses.aggregate(total=Sum('amount'))['total']
 
         return expenses, expense_total

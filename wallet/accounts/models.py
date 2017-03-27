@@ -37,17 +37,20 @@ class Wallet(models.Model):
     def get_transactions(self):
         return self.transaction_set.filter(completed=False)
 
+    def update_savings(self, amount):
+        self.savings = amount
+        self.save()
+
     def update_payperiod_and_savings(self):
         date = parse_date('today')
 
         payperiods = generate_payperiods(self, date)
-        payperiod = payperiods[-1]
-
         payperiod_savings = calculate_payperiod_savings(payperiods)
 
-        self.savings += payperiod_savings
-        self.save()
+        savings = self.savings + payperiod_savings
+        self.update_savings(savings)
 
+        payperiod = payperiods[-1]
         payperiod.current = True
         payperiod.save()
 
