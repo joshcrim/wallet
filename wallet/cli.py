@@ -11,10 +11,27 @@ from transactions.models import Occurrence, Transaction
 
 
 class Account(object):
-    def __init__(self):
+    def __init__(self, date=None):
+        # Get wallet and update current payperiod and savings balance
         self.wallet = Wallet.objects.first()
-        self.payperiod = self.wallet.update_payperiod_and_savings()
-        self.today = parse_date('today')
+        self.wallet.update_payperiod_and_savings()
+
+        # Get the payperiod for the requested date or today
+        date = date or 'today'
+        self.date = parse_date(date)
+
+        today = parse_date('today')
+
+        if self.date < today:
+            click.echo(crayons.red("Select a date of today or later."))
+            sys.exit()
+
+        self.payperiod = self.wallet.get_payperiod(self.date)
+
+        # Run payperiod Calculations
+        self.incomes, self.income_total = self.payperiod.get_incomes()
+        self.expenses, self.expense_total = self.payperiod.get_expenses()
+        self.upcoming, self.upcoming_total = self.wallet.get_upcoming_expenses(self.date)
 
 
 @click.group(invoke_without_command=True)
@@ -25,19 +42,28 @@ class Account(object):
     default=None,
     help="Show this message then exit."
 )
+@click.option('--setsavings')
 @click.option('--edit', nargs=1)
 @click.pass_context
-def cli(ctx, date=None, edit=None, help=False):
+def cli(ctx, date=None, edit=None, setsavings=None, help=False):
 
-    account = ctx.obj = Account()
+    account = ctx.obj = Account(date=date)
 
     options = {
-        'savings': savings,
         'income': income,
         'expenses': expense,
     }
 
-    if edit:
+    if setsavings:
+        savings = setsavings
+        account.wallet.savings = savings
+        account.wallet.save()
+
+        click.echo(
+            crayons.yellow("New savings balance: {0}".format(account.wallet.savings))
+        )
+
+    elif edit:
         if edit not in options:
             click.echo(crayons.red('Enter a valid command'))
             sys.exit()
@@ -45,29 +71,16 @@ def cli(ctx, date=None, edit=None, help=False):
         ctx.invoke(options[edit])
 
     else:
-        date = date or 'today'
-        date = parse_date(date)
-
-        if date < account.today:
-            click.echo(crayons.red("Select a date of today or later."))
-            sys.exit()
-
-        payperiod = account.wallet.get_payperiod(date)
-
-        incomes, income_total = payperiod.get_incomes()
-        expenses, expense_total = payperiod.get_expenses()
-        upcoming_expenses, upcoming_expenses_total = account.wallet.get_upcoming_expenses(date)
-
         click.echo('\n', nl=False)
 
         click.echo(
             crayons.cyan("Wallet for {0} on {1}".format(
-                str(account.wallet), date.strftime("%B %d, %Y"))
+                account.wallet, account.date.strftime("%B %d, %Y"))
             )
         )
         click.echo(
             crayons.yellow("Savings balance: \t${0}".format(
-                account.wallet.calculate_savings_balance(date)))
+                account.wallet.calculate_savings_balance(account.date)))
         )
         click.echo(
             crayons.yellow("PayPeriod Savings: \t${0}".format(
@@ -75,53 +88,49 @@ def cli(ctx, date=None, edit=None, help=False):
         )
         click.echo('\n', nl=False)
 
-        click.echo(crayons.cyan("Income: ${0}".format(income_total)))
-        for trans in incomes:
+        click.echo(crayons.cyan("Income: ${0}".format(account.income_total)))
+        for trans in account.incomes:
             if len(trans.transaction.name) <= 5:
                 click.echo(
-                    "\t" + crayons.yellow(
-                        trans.transaction.name + ":\t\t$" + str(trans.amount)
+                    crayons.yellow("\t\t{0}:\t${1}".format(
+                        trans.transaction.name, trans.amount)
                     )
                 )
             else:
                 click.echo(
-                    "\t" + crayons.yellow(
-                        trans.transaction.name + ":\t$" + str(trans.amount)
+                    crayons.yellow("\t{0}:\t${1}".format(
+                        trans.transaction.name, trans.amount)
                     )
                 )
         click.echo('\n', nl=False)
 
-        click.echo(crayons.cyan("Expenses: ${0}".format(expense_total)))
-        for trans in expenses:
+        click.echo(crayons.cyan("Expenses: ${0}".format(account.expense_total)))
+        for trans in account.expenses:
             if len(trans.transaction.name) <= 5:
                 click.echo(
-                    "\t" + crayons.yellow(
-                        trans.transaction.name + ":\t\t$" + str(trans.amount)
+                    crayons.yellow("\t{0}:\t\t${1}".format(
+                        trans.transaction.name, trans.amount)
                     )
                 )
             else:
                 click.echo(
-                    "\t" + crayons.yellow(
-                        trans.transaction.name + ":\t$" + str(trans.amount)
+                    crayons.yellow("\t{0}:\t${1}".format(
+                        trans.transaction.name, trans.amount)
                     )
                 )
         click.echo('\n', nl=False)
 
-        click.echo(crayons.cyan("Upcoming Expenses: ${0}".format(upcoming_expenses_total)))
-        for trans in upcoming_expenses:
+        click.echo(crayons.cyan("Upcoming Expenses: ${0}".format(account.upcoming_total)))
+        for trans in account.upcoming:
             click.echo(crayons.blue('\t{0}'.format(trans[0].strftime("%B %d, %Y"))))
 
             if len(trans[1]) <= 5:
                 click.echo(
-                    "\t" + crayons.yellow(
-                        trans[1] + ":\t\t$" + str(trans[2])
-                    )
+                    crayons.yellow("\t{0}:\t\t${1}".format(trans[1], trans[2]))
                 )
             else:
                 click.echo(
-                    "\t" + crayons.yellow(
-                        trans[1] + ":\t$" + str(trans[2])
-                    )
+                    crayons.yellow("\t{0}:\t${1}".format(trans[1], trans[2]))
                 )
         click.echo('\n', nl=False)
 
