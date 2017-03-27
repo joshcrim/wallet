@@ -1,3 +1,5 @@
 wallet.egg-info/
 wallet/create_db.py
 wallet/Makefile
+Pipfile
+Pipfile.lock
