@@ -1,0 +1,21 @@
+[[source]]
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+
+[dev-packages]
+django-debug-toolbar = "*"
+
+[packages]
+django-annoying = "*"
+djangorestframework = "*"
+gunicorn = "*"
+psycopg2 = "*"
+python-dateutil = "*"
+sqlparse = "*"
+maya = "*"
+click = "*"
+Django = "*"
+crayons = "*"
+
+[requires]
+python_version = "3.5"
