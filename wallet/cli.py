@@ -1,13 +1,17 @@
 import click
 import crayons
-from decimal import Decimal
 
 import sys
 
-from utils import parse_date
+from utils import (
+    format_transaction_output,
+    parse_date,
+    prompt_add_transaction,
+    prompt_delete_transaction,
+    prompt_edit_transaction
+)
 
 from accounts.models import Wallet
-from transactions.models import Occurrence, Transaction
 
 
 class Account(object):
@@ -43,9 +47,11 @@ class Account(object):
     help="Show this message then exit."
 )
 @click.option('--setsavings')
-@click.option('--add', nargs=1)
+@click.option('--add', type=click.Choice(['income', 'expense']))
+@click.option('--edit', type=click.Choice(['income', 'expense']))
+@click.option('--delete', type=click.Choice(['income', 'expense']))
 @click.pass_context
-def cli(ctx, date=None, add=None, setsavings=None, help=False):
+def cli(ctx, date=None, setsavings=None, add=None, edit=None, delete=None, help=False):
 
     account = ctx.obj = Account(date=date)
 
@@ -62,74 +68,55 @@ def cli(ctx, date=None, add=None, setsavings=None, help=False):
         )
 
     elif add:
-        if add not in options:
-            click.echo(crayons.red('Enter a valid command'))
-            sys.exit()
-
+        account.context = 'add'
         ctx.invoke(options[add])
+
+    elif edit:
+        account.context = 'edit'
+        ctx.invoke(options[edit])
+
+    elif delete:
+        account.context = 'delete'
+        ctx.invoke(options[delete])
 
     else:
         click.echo('\n', nl=False)
 
         click.echo(
-            crayons.cyan("Wallet for {0} on {1}".format(
-                account.wallet, account.date.strftime("%B %d, %Y"))
+            crayons.cyan(
+                "Wallet for {0} on {1}".format(
+                    account.wallet, account.date.strftime("%B %d, %Y")
+                )
             )
         )
+
         click.echo(
-            crayons.yellow("Savings balance: \t${0}".format(
-                account.wallet.calculate_savings_balance(account.date)))
+            crayons.yellow(
+                "Savings balance: \t${0}".format(
+                    account.wallet.calculate_savings_balance(account.date)
+                )
+            )
         )
+
         click.echo(
-            crayons.yellow("PayPeriod Savings: \t${0}".format(
-                account.payperiod.get_savings()))
+            crayons.yellow(
+                "PayPeriod Savings: \t${0}".format(
+                    account.payperiod.get_savings()
+                )
+            )
         )
         click.echo('\n', nl=False)
 
         click.echo(crayons.cyan("Income: ${0}".format(account.income_total)))
-        for trans in account.incomes:
-            if len(trans.transaction.name) <= 5:
-                click.echo(
-                    crayons.yellow("\t\t{0}:\t${1}".format(
-                        trans.transaction.name, trans.amount)
-                    )
-                )
-            else:
-                click.echo(
-                    crayons.yellow("\t{0}:\t${1}".format(
-                        trans.transaction.name, trans.amount)
-                    )
-                )
+        format_transaction_output(account.incomes)
         click.echo('\n', nl=False)
 
         click.echo(crayons.cyan("Expenses: ${0}".format(account.expense_total)))
-        for trans in account.expenses:
-            if len(trans.transaction.name) <= 5:
-                click.echo(
-                    crayons.yellow("\t{0}:\t\t${1}".format(
-                        trans.transaction.name, trans.amount)
-                    )
-                )
-            else:
-                click.echo(
-                    crayons.yellow("\t{0}:\t${1}".format(
-                        trans.transaction.name, trans.amount)
-                    )
-                )
+        format_transaction_output(account.expenses)
         click.echo('\n', nl=False)
 
         click.echo(crayons.cyan("Upcoming Expenses: ${0}".format(account.upcoming_total)))
-        for trans in account.upcoming:
-            click.echo(crayons.blue('\t{0}'.format(trans[0].strftime("%B %d, %Y"))))
-
-            if len(trans[1]) <= 5:
-                click.echo(
-                    crayons.yellow("\t{0}:\t\t${1}".format(trans[1], trans[2]))
-                )
-            else:
-                click.echo(
-                    crayons.yellow("\t{0}:\t${1}".format(trans[1], trans[2]))
-                )
+        format_transaction_output(account.upcoming)
         click.echo('\n', nl=False)
 
 
@@ -137,81 +124,39 @@ def cli(ctx, date=None, add=None, setsavings=None, help=False):
 @click.pass_obj
 def income(account):
 
-    income = Transaction(
-        wallet=account.wallet,
-        trans_type=0,
-    )
+    if account.context is 'add':
+        prompt_add_transaction(account, 'Income')
+        click.echo('\n', nl=False)
 
-    income.name = click.prompt(crayons.magenta('Income Name', type=str), type=str)
-    income.amount = click.prompt(crayons.magenta('Income Amount'), type=Decimal)
+    elif account.context is 'edit':
+        click.echo('Income Edit Success')
+        prompt_edit_transaction(account, 'Income')
+        click.echo('\n', nl=False)
 
-    recurring = click.prompt(crayons.magenta('Is this a One Time(0) or Recurring(1) income'), type=int)
-
-    if recurring:
-        income.frequency = click.prompt(crayons.magenta('BiWeekly(0) or Monthly(1)'), type=int)
-        income.save()
-
-    else:
-        income.frequency = 0
-        income.completed = True
-        income.save()
-
-        date = click.prompt(crayons.magenta('Date income occurs'), type=str)
-        date = parse_date(date)
-
-        payperiod = account.wallet.get_payperiod(date)
-
-        occurrence = Occurrence(
-            payperiod=payperiod,
-            transaction=income,
-            amount=income.amount
-        )
-
-        occurrence.save()
-
-    click.echo(
-        crayons.yellow("Income created: {0} ${1}".format(income.name, income.amount))
-    )
+    elif account.context is 'delete':
+        click.echo('\n', nl=False)
+        prompt_delete_transaction(account, 'Income')
+        click.echo('\n', nl=False)
 
 
 @click.command(help="List and modify expenses.")
 @click.pass_obj
 def expense(account):
-    expense = Transaction(
-        wallet=account.wallet,
-        trans_type=1,
-    )
 
-    expense.name = click.prompt(crayons.magenta('Expense Name'), type=str)
-    expense.amount = click.prompt(crayons.magenta('Expense Amount'), type=Decimal)
+    if account.context is 'add':
+        click.echo('\n', nl=False)
+        prompt_add_transaction(account, 'Expense')
+        click.echo('\n', nl=False)
 
-    recurring = click.prompt(crayons.magenta('Is this a One Time(0) or Recurring(1) expense'), type=int)
+    elif account.context is 'edit':
+        click.echo('\n', nl=False)
+        prompt_edit_transaction(account, 'Expense')
+        click.echo('\n', nl=False)
 
-    if recurring:
-        expense.frequency = click.prompt(crayons.magenta('BiWeekly(0) or Monthly(1)'), type=int)
-        expense.save()
-
-    else:
-        expense.frequency = 0
-        expense.completed = True
-        expense.save()
-
-        date = click.prompt(crayons.magenta('Date expense occurs'), type=str)
-        date = parse_date(date)
-
-        payperiod = account.wallet.get_payperiod(date)
-
-        occurrence = Occurrence(
-            payperiod=payperiod,
-            transaction=expense,
-            amount=expense.amount
-        )
-
-        occurrence.save()
-
-    click.echo(
-        crayons.yellow("Expense created: {0} ${1}".format(expense.name, expense.amount))
-    )
+    elif account.context is 'delete':
+        click.echo('\n', nl=False)
+        prompt_delete_transaction(account, 'Expense')
+        click.echo('\n', nl=False)
 
 
 cli.add_command(income)

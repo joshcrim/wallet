@@ -37,6 +37,10 @@ class Occurrence(models.Model):
     def __str__(self):
         return '%s' % self.transaction.name
 
+    @property
+    def name(self):
+        return self.transaction.name
+
 
 class PayPeriod(models.Model):
     wallet = models.ForeignKey('accounts.Wallet')
@@ -94,6 +98,11 @@ class PayPeriod(models.Model):
     def save(self, *args, **kwargs):
         if self.current:
             PayPeriod.objects.filter(
-                wallet=self.wallet).exclude(id=self.id).update(current=False)
+                wallet=self.wallet
+            ).exclude(
+                id=self.id
+            ).update(
+                current=False
+            )
 
         super(PayPeriod, self).save(*args, **kwargs)

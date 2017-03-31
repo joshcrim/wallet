@@ -1,5 +1,7 @@
 from django.db import models
 
+from collections import namedtuple
+
 from utils import (
     calculate_payperiod_savings,
     generate_payperiods,
@@ -56,7 +58,7 @@ class Wallet(models.Model):
 
         return payperiod
 
-    def get_payperiod(self, date, commit=False):
+    def get_payperiod(self, date):
         payperiods = generate_payperiods(self, date)
         payperiod = payperiods[-1]
 
@@ -74,6 +76,8 @@ class Wallet(models.Model):
         date = parse_date(date)
         payperiods = self.payperiod_set.filter(date__gt=date)
 
+        Expense = namedtuple('Expenses', ['date', 'name', 'amount'])
+
         expenses = []
         total_expenses = 0
         for payperiod in payperiods:
@@ -82,7 +86,7 @@ class Wallet(models.Model):
             if occurrences.exists():
                 for occurrence in occurrences:
                     expenses.append(
-                        [payperiod.date, occurrence.transaction.name, occurrence.amount]
+                        Expense(payperiod.date, occurrence.name, occurrence.amount)
                     )
 
                     total_expenses += occurrence.amount
