@@ -1,9 +1,9 @@
 import click
-import crayons
 
 import sys
 
-from utils import (
+from . import cli_utils as cu
+from .utils import (
     format_transaction_output,
     parse_date,
     prompt_add_transaction,
@@ -27,7 +27,7 @@ class Account(object):
         today = parse_date('today')
 
         if self.date < today:
-            click.echo(crayons.red("Select a date of today or later."))
+            cu.output_red("Select a date of today or later.")
             sys.exit()
 
         self.payperiod = self.wallet.get_payperiod(self.date)
@@ -63,9 +63,7 @@ def cli(ctx, date=None, setsavings=None, add=None, edit=None, delete=None, help=
     if setsavings:
         account.wallet.update_savings(setsavings)
 
-        click.echo(
-            crayons.yellow("New savings balance: {0}".format(account.wallet.savings))
-        )
+        cu.output_yellow("New savings balance: {0}", account.wallet.savings)
 
     elif add:
         account.context = 'add'
@@ -80,44 +78,40 @@ def cli(ctx, date=None, setsavings=None, add=None, edit=None, delete=None, help=
         ctx.invoke(options[delete])
 
     else:
-        click.echo('\n', nl=False)
+        cu.newline()
 
-        click.echo(
-            crayons.cyan(
-                "Wallet for {0} on {1}".format(
-                    account.wallet, account.date.strftime("%B %d, %Y")
-                )
-            )
+        cu.output_cyan(
+            "Wallet for {0} on {1}",
+            account.wallet,
+            account.date.strftime("%B %d, %Y")
         )
 
-        click.echo(
-            crayons.yellow(
-                "Savings balance: \t${0}".format(
-                    account.wallet.calculate_savings_balance(account.date)
-                )
-            )
+        cu.output_yellow(
+            "Savings balance: \t${0}",
+            account.wallet.calculate_savings_balance(account.date)
         )
 
-        click.echo(
-            crayons.yellow(
-                "PayPeriod Savings: \t${0}".format(
-                    account.payperiod.get_savings()
-                )
-            )
+        cu.output_yellow(
+            "PayPeriod Savings: \t${0}",
+            account.payperiod.get_savings()
         )
-        click.echo('\n', nl=False)
 
-        click.echo(crayons.cyan("Income: ${0}".format(account.income_total)))
+        cu.newline()
+
+        cu.output_cyan("Income: ${0}", account.income_total)
         format_transaction_output(account.incomes)
-        click.echo('\n', nl=False)
 
-        click.echo(crayons.cyan("Expenses: ${0}".format(account.expense_total)))
+        cu.newline()
+
+        cu.output_cyan("Expenses: ${0}", account.expense_total)
         format_transaction_output(account.expenses)
-        click.echo('\n', nl=False)
 
-        click.echo(crayons.cyan("Upcoming Expenses: ${0}".format(account.upcoming_total)))
+        cu.newline()
+
+        cu.output_cyan("Upcoming Expenses: ${0}", account.upcoming_total)
         format_transaction_output(account.upcoming)
-        click.echo('\n', nl=False)
+
+        cu.newline()
 
 
 @click.command(help="List and modify incomes.")
@@ -126,17 +120,15 @@ def income(account):
 
     if account.context is 'add':
         prompt_add_transaction(account, 'Income')
-        click.echo('\n', nl=False)
+        cu.newline()
 
     elif account.context is 'edit':
-        click.echo('Income Edit Success')
         prompt_edit_transaction(account, 'Income')
-        click.echo('\n', nl=False)
+        cu.newline()
 
     elif account.context is 'delete':
-        click.echo('\n', nl=False)
         prompt_delete_transaction(account, 'Income')
-        click.echo('\n', nl=False)
+        cu.newline()
 
 
 @click.command(help="List and modify expenses.")
@@ -144,19 +136,16 @@ def income(account):
 def expense(account):
 
     if account.context is 'add':
-        click.echo('\n', nl=False)
         prompt_add_transaction(account, 'Expense')
-        click.echo('\n', nl=False)
+        cu.newline()
 
     elif account.context is 'edit':
-        click.echo('\n', nl=False)
         prompt_edit_transaction(account, 'Expense')
-        click.echo('\n', nl=False)
+        cu.newline()
 
     elif account.context is 'delete':
-        click.echo('\n', nl=False)
         prompt_delete_transaction(account, 'Expense')
-        click.echo('\n', nl=False)
+        cu.newline()
 
 
 cli.add_command(income)

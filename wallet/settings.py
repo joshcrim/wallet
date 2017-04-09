@@ -1,4 +1,6 @@
 import os
+import sys
+
 
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
 
@@ -17,3 +19,6 @@ DATABASES = {
         'PORT': '',
     }
 }
+
+if 'test' in sys.argv:
+    DATABASES['default'] = {'ENGINE': 'django.db.backends.sqlite3'}

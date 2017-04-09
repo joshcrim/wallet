@@ -1,12 +1,10 @@
+from django.apps import apps
 from django.db import models
 
 from collections import namedtuple
+from datetime import timedelta
 
-from utils import (
-    calculate_payperiod_savings,
-    generate_payperiods,
-    parse_date
-)
+from utils import parse_date
 
 
 class User(models.Model):
@@ -16,7 +14,7 @@ class User(models.Model):
         unique=True
     )
 
-    def _str__(self):
+    def __str__(self):
         return self.username
 
 
@@ -36,6 +34,33 @@ class Wallet(models.Model):
     def __str__(self):
         return '{0}'.format(self.user.username)
 
+    @staticmethod
+    def calculate_payperiod_savings(payperiods):
+        savings = 0
+        for p in payperiods:
+            if p.current is not True:
+                savings += p.get_savings()
+
+        return savings
+
+    def generate_payperiods(self, date):
+        PayPeriod = apps.get_model('transactions', 'PayPeriod')
+
+        payperiod_date = self.payperiod_set.filter(current=True).first().date
+
+        payperiods = []
+        while payperiod_date < date:
+            pp, _ = PayPeriod.objects.get_or_create(
+                wallet=self,
+                date=payperiod_date
+            )
+
+            payperiods.append(pp)
+
+            payperiod_date = payperiod_date + timedelta(weeks=2)
+
+        return payperiods
+
     def get_transactions(self):
         return self.transaction_set.filter(completed=False)
 
@@ -46,8 +71,8 @@ class Wallet(models.Model):
     def update_payperiod_and_savings(self):
         date = parse_date('today')
 
-        payperiods = generate_payperiods(self, date)
-        payperiod_savings = calculate_payperiod_savings(payperiods)
+        payperiods = self.generate_payperiods(date)
+        payperiod_savings = self.calculate_payperiod_savings(payperiods)
 
         savings = self.savings + payperiod_savings
         self.update_savings(savings)
@@ -59,14 +84,14 @@ class Wallet(models.Model):
         return payperiod
 
     def get_payperiod(self, date):
-        payperiods = generate_payperiods(self, date)
+        payperiods = self.generate_payperiods(date)
         payperiod = payperiods[-1]
 
         return payperiod
 
     def calculate_savings_balance(self, date):
-        payperiods = generate_payperiods(self, date)
-        savings = calculate_payperiod_savings(payperiods)
+        payperiods = self.generate_payperiods(date)
+        savings = self.calculate_payperiod_savings(payperiods)
 
         savings = savings + self.savings
 
