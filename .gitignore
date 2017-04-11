@@ -1,2 +1,4 @@
-wallet.egg-info/
 .envrc
+wallet.egg-info/
+wallet/mydatabase
+**/migrations
