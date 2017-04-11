@@ -4,7 +4,7 @@ from django.db import models
 from collections import namedtuple
 from datetime import timedelta
 
-from utils import parse_date
+from utils import parse
 
 
 class User(models.Model):
@@ -49,7 +49,7 @@ class Wallet(models.Model):
         payperiod_date = self.payperiod_set.filter(current=True).first().date
 
         payperiods = []
-        while payperiod_date < date:
+        while payperiod_date <= date:
             pp, _ = PayPeriod.objects.get_or_create(
                 wallet=self,
                 date=payperiod_date
@@ -69,7 +69,7 @@ class Wallet(models.Model):
         self.save()
 
     def update_payperiod_and_savings(self):
-        date = parse_date('today')
+        date = parse.date('today')
 
         payperiods = self.generate_payperiods(date)
         payperiod_savings = self.calculate_payperiod_savings(payperiods)
@@ -98,7 +98,7 @@ class Wallet(models.Model):
         return savings
 
     def get_upcoming_expenses(self, date):
-        date = parse_date(date)
+        date = parse.date(date)
         payperiods = self.payperiod_set.filter(date__gt=date)
 
         Expense = namedtuple('Expenses', ['date', 'name', 'amount'])

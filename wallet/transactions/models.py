@@ -53,6 +53,18 @@ class PayPeriod(models.Model):
     def __str__(self):
         return 'PayPeriod: %s' % self.date
 
+    def save(self, *args, **kwargs):
+        if self.current:
+            PayPeriod.objects.filter(
+                wallet=self.wallet
+            ).exclude(
+                id=self.id
+            ).update(
+                current=False
+            )
+
+        super(PayPeriod, self).save(*args, **kwargs)
+
     def _generate_occurrences(self):
         transactions = self.wallet.get_transactions()
         occurrences = self.occurrence_set.all()
@@ -94,15 +106,3 @@ class PayPeriod(models.Model):
         payperiod_savings = income_total - expense_total
 
         return payperiod_savings
-
-    def save(self, *args, **kwargs):
-        if self.current:
-            PayPeriod.objects.filter(
-                wallet=self.wallet
-            ).exclude(
-                id=self.id
-            ).update(
-                current=False
-            )
-
-        super(PayPeriod, self).save(*args, **kwargs)

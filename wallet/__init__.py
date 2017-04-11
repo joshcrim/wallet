@@ -1,3 +1,5 @@
+# -- Set up Django environment -- #
+
 import sys
 import os
 
@@ -9,6 +11,9 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings")
 
 import django
 django.setup()
+
+# ------------------------------- #
+
 
 from .cli import cli
 

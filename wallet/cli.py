@@ -1,15 +1,9 @@
 import click
-
 import sys
 
-from . import cli_utils as cu
-from .utils import (
-    format_transaction_output,
-    parse_date,
-    prompt_add_transaction,
-    prompt_delete_transaction,
-    prompt_edit_transaction
-)
+from utils import echo
+from utils import prompt
+from utils import parse
 
 from accounts.models import Wallet
 
@@ -22,12 +16,12 @@ class Account(object):
 
         # Get the payperiod for the requested date or today
         date = date or 'today'
-        self.date = parse_date(date)
+        self.date = parse.date(date)
 
-        today = parse_date('today')
+        today = parse.date('today')
 
         if self.date < today:
-            cu.output_red("Select a date of today or later.")
+            echo.red("Select a date of today or later.")
             sys.exit()
 
         self.payperiod = self.wallet.get_payperiod(self.date)
@@ -40,18 +34,12 @@ class Account(object):
 
 @click.group(invoke_without_command=True)
 @click.argument('date', required=False, nargs=-1)
-@click.option(
-    '--help', '-h',
-    is_flag=True,
-    default=None,
-    help="Show this message then exit."
-)
 @click.option('--setsavings')
 @click.option('--add', type=click.Choice(['income', 'expense']))
 @click.option('--edit', type=click.Choice(['income', 'expense']))
 @click.option('--delete', type=click.Choice(['income', 'expense']))
 @click.pass_context
-def cli(ctx, date=None, setsavings=None, add=None, edit=None, delete=None, help=False):
+def cli(ctx, date=None, setsavings=None, add=None, edit=None, delete=None):
 
     account = ctx.obj = Account(date=date)
 
@@ -63,7 +51,7 @@ def cli(ctx, date=None, setsavings=None, add=None, edit=None, delete=None, help=
     if setsavings:
         account.wallet.update_savings(setsavings)
 
-        cu.output_yellow("New savings balance: {0}", account.wallet.savings)
+        echo.yellow("New savings balance: {0}", account.wallet.savings)
 
     elif add:
         account.context = 'add'
@@ -78,40 +66,40 @@ def cli(ctx, date=None, setsavings=None, add=None, edit=None, delete=None, help=
         ctx.invoke(options[delete])
 
     else:
-        cu.newline()
+        echo.newline()
 
-        cu.output_cyan(
+        echo.cyan(
             "Wallet for {0} on {1}",
             account.wallet,
             account.date.strftime("%B %d, %Y")
         )
 
-        cu.output_yellow(
+        echo.yellow(
             "Savings balance: \t${0}",
             account.wallet.calculate_savings_balance(account.date)
         )
 
-        cu.output_yellow(
+        echo.yellow(
             "PayPeriod Savings: \t${0}",
             account.payperiod.get_savings()
         )
 
-        cu.newline()
+        echo.newline()
 
-        cu.output_cyan("Income: ${0}", account.income_total)
-        format_transaction_output(account.incomes)
+        echo.cyan("Income: ${0}", account.income_total)
+        echo.transactions(account.incomes)
 
-        cu.newline()
+        echo.newline()
 
-        cu.output_cyan("Expenses: ${0}", account.expense_total)
-        format_transaction_output(account.expenses)
+        echo.cyan("Expenses: ${0}", account.expense_total)
+        echo.transactions(account.expenses)
 
-        cu.newline()
+        echo.newline()
 
-        cu.output_cyan("Upcoming Expenses: ${0}", account.upcoming_total)
-        format_transaction_output(account.upcoming)
+        echo.cyan("Upcoming Expenses: ${0}", account.upcoming_total)
+        echo.transactions(account.upcoming)
 
-        cu.newline()
+        echo.newline()
 
 
 @click.command(help="List and modify incomes.")
@@ -119,16 +107,16 @@ def cli(ctx, date=None, setsavings=None, add=None, edit=None, delete=None, help=
 def income(account):
 
     if account.context is 'add':
-        prompt_add_transaction(account, 'Income')
-        cu.newline()
+        prompt.add_transaction(account, 'Income')
+        echo.newline()
 
     elif account.context is 'edit':
-        prompt_edit_transaction(account, 'Income')
-        cu.newline()
+        prompt.edit_transaction(account, 'Income')
+        echo.newline()
 
     elif account.context is 'delete':
-        prompt_delete_transaction(account, 'Income')
-        cu.newline()
+        prompt.delete_transaction(account, 'Income')
+        echo.newline()
 
 
 @click.command(help="List and modify expenses.")
@@ -136,16 +124,16 @@ def income(account):
 def expense(account):
 
     if account.context is 'add':
-        prompt_add_transaction(account, 'Expense')
-        cu.newline()
+        prompt.add_transaction(account, 'Expense')
+        echo.newline()
 
     elif account.context is 'edit':
-        prompt_edit_transaction(account, 'Expense')
-        cu.newline()
+        prompt.edit_transaction(account, 'Expense')
+        echo.newline()
 
     elif account.context is 'delete':
-        prompt_delete_transaction(account, 'Expense')
-        cu.newline()
+        prompt.delete_transaction(account, 'Expense')
+        echo.newline()
 
 
 cli.add_command(income)

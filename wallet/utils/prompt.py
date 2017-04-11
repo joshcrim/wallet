@@ -1,39 +1,15 @@
-
-
 import click
 import crayons
 
 from decimal import Decimal
-import maya
+
+from utils import echo
+from utils import parse
 
 from transactions.models import Occurrence, Transaction
 
 
-def parse_date(date):
-    date = maya.when(str(date))
-    date = date.datetime(to_timezone='US/Eastern').date()
-
-    return date
-
-
-def format_transaction_output(transactions):
-    for trans in transactions:
-        if hasattr(trans, 'date'):
-            click.echo(
-                crayons.blue('\t{0}'.format(trans.date.strftime("%B %d, %Y")))
-            )
-
-        if len(trans.name) <= 6:
-            click.echo(
-                crayons.yellow("\t{0}:\t\t${1}".format(trans.name, trans.amount))
-            )
-        else:
-            click.echo(
-                crayons.yellow("\t{0}:\t${1}".format(trans.name, trans.amount))
-            )
-
-
-def prompt_add_transaction(account, trans_type):
+def add_transaction(account, trans_type):
     if trans_type is 'Income':
         trans_int = 0
     elif trans_type is 'Expense':
@@ -64,7 +40,7 @@ def prompt_add_transaction(account, trans_type):
         transaction.save()
 
         date = click.prompt(crayons.magenta('Date occurs'), type=str)
-        date = parse_date(date)
+        date = parse.date(date)
 
         payperiod = account.wallet.get_payperiod(date)
 
@@ -76,30 +52,25 @@ def prompt_add_transaction(account, trans_type):
 
         occurrence.save()
 
-    click.echo(
-        crayons.yellow(
-            "{0} created: {1} ${2}".format(
-                trans_type, transaction.name, transaction.amount
-            )
-        )
+    echo.yellow(
+        "{0} created: {1} ${2}",
+        trans_type, transaction.name, transaction.amount
     )
 
 
-def prompt_edit_transaction(account, trans_type):
+def edit_transaction(account, trans_type):
     if trans_type is 'Income':
         occurrences = account.incomes
     elif trans_type is 'Expense':
         occurrences = account.expenses
 
-    click.echo(
-        crayons.cyan(
-            "{0}: ${0}".format(
-                trans_type, account.expense_total)
-        )
+    echo.cyan(
+        "{0}: ${0}",
+        trans_type, account.expense_total
     )
 
-    format_transaction_output(occurrences)
-    click.echo('\n', nl=False)
+    echo.transactions(occurrences)
+    echo.newline()
 
     choices = [occurrence.name for occurrence in occurrences]
     transaction_name = click.prompt(
@@ -143,30 +114,25 @@ def prompt_edit_transaction(account, trans_type):
             occurrence.transaction.amount = new_amount
             occurrence.transaction.save()
 
-    click.echo(
-        crayons.yellow(
-            "{0} Edited. {1}: {2}".format(
-                trans_type, occurrence.name, occurrence.amount
-            )
-        )
+    echo.yellow(
+        "{0} Edited. {1}: {2}",
+        trans_type, occurrence.name, occurrence.amount
     )
 
 
-def prompt_delete_transaction(account, trans_type):
+def delete_transaction(account, trans_type):
     if trans_type is 'Income':
         occurrences = account.incomes
     elif trans_type is 'Expense':
         occurrences = account.expenses
 
-    click.echo(
-        crayons.cyan(
-            "{0}: ${0}".format(
-                trans_type, account.expense_total)
-        )
+    echo.cyan(
+        "{0}: ${0}",
+        trans_type, account.expense_total
     )
 
-    format_transaction_output(occurrences)
-    click.echo('\n', nl=False)
+    echo.transactions(occurrences)
+    echo.newline()
 
     choices = [occurrence.name for occurrence in occurrences]
     transaction_name = click.prompt(
@@ -191,10 +157,7 @@ def prompt_delete_transaction(account, trans_type):
     elif payperiod_or_forever is '1':
         occurrence.transaction.delete()
 
-    click.echo(
-        crayons.yellow(
-            "{0} Deleted. {1}: {2}".format(
-                trans_type, occurrence.name, occurrence.amount
-            )
-        )
+    echo.yellow(
+        "{0} Deleted. {1}: {2}",
+        trans_type, occurrence.name, occurrence.amount
     )
