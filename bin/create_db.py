@@ -2,7 +2,7 @@
 
 import sys
 import os
-sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'wallet'))
+sys.path.append(os.path.join(os.path.dirname(__file__), 'wallet'))
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "wallet.settings")
 

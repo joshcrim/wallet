@@ -3,7 +3,7 @@ clean:
 	@find -type d -name __pycache__ | xargs rm -rf
 
 reset_db:
-	@if [ -e "./mydatabase" ]; then rm mydatabase; fi;
+	@if [ -e "wallet/mydatabase" ]; then rm wallet/mydatabase; fi;
 
 makemigrations:
 	python bin/manage.py makemigrations accounts transactions
